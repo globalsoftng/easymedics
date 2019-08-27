@@ -1,6 +1,7 @@
 theme: jekyll-theme-cayman
 title: [EasyMedics for Laboratory]
 show_downloads: true
+layout: default
 github:
   zip_url: setup.exe
   tar_url: EasyMedics.application
