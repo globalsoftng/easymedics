@@ -13,4 +13,4 @@ The following prerequisites are required:
 
 If these components are already installed, you can <SPAN CLASS="JustThisApp"><A HREF="EasyMedics.application">launch</A></SPAN> the application now.
 
-Support: tons613@ymail.com
+Contact:  ####tons613@ymail.com
