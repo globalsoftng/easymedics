@@ -9,5 +9,6 @@ The following prerequisites are required:
 </UL>
 
 # How to Install
- Download and run the <a href="setup.exe"> setup file </a>
+ Download and run the <a href="setup.exe"> <i>setup file.</i> </a>
+
 If these components are already installed, you can <SPAN CLASS="JustThisApp"><A HREF="EasyMedics.application">launch</A></SPAN> the application now.
