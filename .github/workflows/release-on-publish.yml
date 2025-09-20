@@ -31,7 +31,5 @@ jobs:
           Includes ClickOnce installer and manifest files.
         files: |
           docs/setup.exe
-          docs/EasyMedics.application
-          docs/Application Files/**/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
