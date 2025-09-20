@@ -3,7 +3,7 @@ name: Create Release on Publish
 on:
   push:
     branches:
-      - dev
+      - main
     # paths:
     #   - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
 
