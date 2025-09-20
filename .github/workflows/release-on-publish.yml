@@ -5,7 +5,7 @@ on:
     branches:
       - main
     # paths:
-      # - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
+      - 'Application Files/**'  # Trigger only if ClickOnce files in /docs are updated
 
 jobs:
   release:
@@ -18,7 +18,7 @@ jobs:
     - name: Get version from .application file
       id: get_version
       run: |
-        version=$(grep -oP 'version="\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' docs/EasyMedics.application | head -1)
+        version=$(grep -oP 'version="\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' EasyMedics.application | head -1)
         echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Create GitHub Release
@@ -27,8 +27,7 @@ jobs:
         tag_name: v${{ steps.get_version.outputs.version }}
         name: EasyMedics v${{ steps.get_version.outputs.version }}
         body: |
-          Auto-generated release for EasyMedics v${{ steps.get_version.outputs.version }}.
-          Includes ClickOnce installer and manifest files.
+          New release for EasyMedics v${{ steps.get_version.outputs.version }}.
         files: |
           setup.exe
       env:
