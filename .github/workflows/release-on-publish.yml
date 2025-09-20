@@ -5,7 +5,7 @@ on:
     branches:
       - main
     # paths:
-      - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
+      # - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
 
 jobs:
   release:
@@ -30,6 +30,6 @@ jobs:
           Auto-generated release for EasyMedics v${{ steps.get_version.outputs.version }}.
           Includes ClickOnce installer and manifest files.
         files: |
-          docs/setup.exe
+          setup.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
