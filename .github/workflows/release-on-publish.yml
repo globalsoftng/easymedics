@@ -5,7 +5,7 @@ on:
     branches:
       - main
     # paths:
-    #   - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
+      - 'docs/**'  # Trigger only if ClickOnce files in /docs are updated
 
 jobs:
   release:
