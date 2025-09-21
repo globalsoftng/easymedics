@@ -8,16 +8,16 @@ The following prerequisites are required:
 <LI>Windows Installer 3.1</LI>
 </UL>
 
-### How to Install
+### 🖱️How to Install
  Download and run the <a href="setup.exe"> <i>setup file.</i> </a>
 
-If these components are already installed, you can <SPAN CLASS="JustThisApp"><A HREF="EasyMedics.application">launch</A></SPAN> the application now.
+If these components are already installed, you can <span class="JustThisApp"><a href="EasyMedics.application">🚀launch</a></span> the application now.
 
 
-## 📦 Version Info
+### 📦Version Info
 
 **Current Version:** 6.0.0.0  
 **Release Date:** September 20, 2025
 
-## 📬 Contact
+### 📬 Contact
  For support or inquiries, email: tons613@ymail.com
