@@ -1,0 +1,183 @@
+-- Create tracking table if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[SchemaUpdates]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE dbo.SchemaUpdates (
+        UpdateKey VARCHAR(100) PRIMARY KEY,
+        AppliedOn DATETIME DEFAULT GETDATE()
+    )
+END
+
+------------------------------------------------------------
+-- Index: tblClinicals
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblClinicals_ClientID_TestID_date_reg')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_tblClinicals_ClientID_TestID_date_reg
+    ON dbo.tblClinicals (ClientID, TestID, date_reg)
+    INCLUDE (clinicalID, status, Amount, reportType, date_modified, _order_id, _orderdetail_id, date_reported)
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('IX_tblClinicals_ClientID_TestID_date_reg')
+END
+
+------------------------------------------------------------
+-- Index: tblPayment
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblPayment_transID_date_added')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_tblPayment_transID_date_added
+    ON dbo.tblPayment (transID, date_added)
+    INCLUDE (totalAmt, status, ClinicalInfo, AmtToPay, Referrer, CorporateDoc)
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('IX_tblPayment_transID_date_added')
+END
+
+------------------------------------------------------------
+-- Index: tblClientsInfo
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblClientsInfo_ID')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_tblClientsInfo_ID
+    ON dbo.tblClientsInfo (ID)
+    INCLUDE (Name, lastname, dob, Sex, EmailAddress, EDD, LMP)
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('IX_tblClientsInfo_ID')
+END
+
+------------------------------------------------------------
+-- Index: tblTestType
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_tblTestType_TestID_testCategoryID')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_tblTestType_TestID_testCategoryID
+    ON dbo.tblTestType (TestID, testCategoryID)
+    INCLUDE (TestDescription)
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('IX_tblTestType_TestID_testCategoryID')
+END
+
+------------------------------------------------------------
+-- Index: testCategory
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_testCategory_testCategoryID')
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_testCategory_testCategoryID
+    ON dbo.testCategory (testCategoryID)
+    INCLUDE (testCategoryName)
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('IX_testCategory_testCategoryID')
+END
+
+------------------------------------------------------------
+-- Column: tblusers.can_approve_result
+IF COL_LENGTH('dbo.tblusers', 'can_approve_result') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblusers ADD can_approve_result BIT NOT NULL DEFAULT 0
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblusers_can_approve_result')
+END
+
+------------------------------------------------------------
+-- Table: tblBillingTypes
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'dbo.tblBillingTypes') AND type in (N'U'))
+BEGIN
+    CREATE TABLE dbo.tblBillingTypes (
+        Id INT IDENTITY(1,1) NOT NULL,
+        PartnerType VARCHAR(50) NULL,
+        CONSTRAINT PK_tblBillingTypes PRIMARY KEY CLUSTERED (Id ASC)
+    )
+
+    SET IDENTITY_INSERT dbo.tblBillingTypes ON
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (1, 'PRIVATE')
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (2, 'CORPORATE')
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (3, 'HMO')
+    SET IDENTITY_INSERT dbo.tblBillingTypes OFF
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblBillingTypes_created')
+END
+
+------------------------------------------------------------
+-- Table: tblBanksAccounts
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'dbo.tblBanksAccounts') AND type in (N'U'))
+BEGIN
+    CREATE TABLE dbo.tblBanksAccounts (
+        BankId INT IDENTITY(1,1) NOT NULL,
+        Bankname VARCHAR(50) NULL,
+        AcctNum VARCHAR(50) NULL
+    )
+
+    SET IDENTITY_INSERT dbo.tblBanksAccounts ON
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (1, 'Access Bank', '0005324161')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (2, 'FirstBank Plc(MRI)', '2026333386')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (3, 'FirstBank Plc', '2009307380')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (4, 'Ecobank Plc', '0433002807')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (5, 'Access2', '0712411280')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (6, 'Diamond', '0102358381')
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (0, NULL, NULL)
+    SET IDENTITY_INSERT dbo.tblBanksAccounts OFF
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblBanksAccounts_created')
+END
+
+------------------------------------------------------------
+-- Columns: tblPayment
+IF COL_LENGTH('dbo.tblPayment', 'SendToWA') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblPayment ADD 
+        SendToWA TINYINT NOT NULL DEFAULT 0,
+        SendToEmail TINYINT NOT NULL DEFAULT 0,
+        PACode VARCHAR(50) NULL,
+        EnroleeNo VARCHAR(50) NULL
+
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblPayment_columns_added')
+END
+
+------------------------------------------------------------
+-- Column: tblCoporateAccts.AccountType
+IF COL_LENGTH('dbo.tblCoporateAccts', 'AccountType') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblCoporateAccts ADD AccountType INT NOT NULL DEFAULT 2
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblCoporateAccts_AccountType_added')
+END
+
+------------------------------------------------------------
+-- View: vw_TestType
+IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_TestType')
+BEGIN
+    DROP VIEW vw_TestType
+END
+
+EXEC('
+CREATE VIEW dbo.vw_TestType AS
+SELECT 
+    tt.TestID, tt.TestDescription, tc.testCategoryName, 
+    tt.privatePrice, tt.coporatePrice, tt.testCategoryID, 
+    tt.hmoprice, tt.amt_usd
+FROM dbo.tblTestType tt
+INNER JOIN dbo.testCategory tc ON tt.testCategoryID = tc.testCategoryID
+')
+
+INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('vw_TestType_created')
+------------------------------------------------------------
+-- View: vwUsers
+IF EXISTS (SELECT * FROM sys.views WHERE name = 'vwUsers')
+BEGIN
+    DROP VIEW vwUsers
+END
+
+EXEC('
+CREATE VIEW dbo.vwUsers
+AS
+SELECT     
+    dbo.tblusers.UserID, dbo.tblStaffDetails.Name + '' '' + dbo.tblStaffDetails.Surname AS Name, 
+    dbo.tblusers.StaffID, Designation, SignatureImage
+FROM dbo.tblusers 
+INNER JOIN dbo.tblStaffDetails ON dbo.tblusers.StaffID = dbo.tblStaffDetails.ID
+')
+
+INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('vwUsers_created')
+
+
+------------------------------------------------------------
+-- Column: tblStaffDetails.SignatureImage
+IF COL_LENGTH('dbo.tblStaffDetails', 'SignatureImage') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblStaffDetails ADD SignatureImage VARBINARY(MAX) NULL
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblStaffDetails_SignatureImage_added')
+END
+
+
+
