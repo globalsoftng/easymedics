@@ -16,8 +16,8 @@ If these components are already installed, you can <span class="JustThisApp"><a 
 
 ### 📦Version Info
 
-**Current Version:** 6.0.0.0  
-**Release Date:** September 20, 2025
+**Current Version:** {{ site.data.version.version }}  
+**Release Date:** {{ site.data.version.date }}
 
 ### 📬 Contact
  For support or inquiries, email: tons613@ymail.com

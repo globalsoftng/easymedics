@@ -3,9 +3,9 @@ name: Create Release on Publish
 on:
   push:
     branches:
-      - main
-    paths:
-      - 'Application Files/**'  # Trigger only if ClickOnce files in /docs are updated
+      - dev
+    # paths:
+    #   - 'Application Files/**'  # Trigger only if ClickOnce files in /docs are updated
 
 jobs:
   release:
@@ -20,15 +20,27 @@ jobs:
       run: |
         version=$(grep -oP 'version="\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' EasyMedics.application | head -1)
         echo "version=$version" >> $GITHUB_OUTPUT
+        - name: Update version.yml for GitHub Pages
+      run: |
+        echo "version: \"${{ steps.get_version.outputs.version }}\"" > _data/version.yml
+        echo "date: \"$(date '+%B %d, %Y')\"" >> _data/version.yml
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ steps.get_version.outputs.version }}
-        name: EasyMedics v${{ steps.get_version.outputs.version }}
-        body: |
-          New release for EasyMedics v${{ steps.get_version.outputs.version }}.
-        files: |
-          setup.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Create GitHub Release
+    #   uses: softprops/action-gh-release@v1
+    #   with:
+    #     tag_name: v${{ steps.get_version.outputs.version }}
+    #     name: EasyMedics v${{ steps.get_version.outputs.version }}
+    #     body: |
+    #       New release for EasyMedics v${{ steps.get_version.outputs.version }}.
+    #     files: |
+    #       setup.exe
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Commit updated version.yml
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add _data/version.yml
+        git commit -m "Update version to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
+        git push
