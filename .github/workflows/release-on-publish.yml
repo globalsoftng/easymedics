@@ -3,7 +3,7 @@ name: Create Release on Publish
 on:
   push:
     branches:
-      - dev
+      - main
     # paths:
     #   - 'Application Files/**'  # Trigger only if ClickOnce files in /docs are updated
 
@@ -20,10 +20,8 @@ jobs:
       run: |
         version=$(grep -oP 'version="\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' EasyMedics.application | head -1)
         echo "version=$version" >> $GITHUB_OUTPUT
-        - name: Update version.yml for GitHub Pages
-      run: |
-        echo "version: \"${{ steps.get_version.outputs.version }}\"" > _data/version.yml
-        echo "date: \"$(date '+%B %d, %Y')\"" >> _data/version.yml
+    
+    
 
     # - name: Create GitHub Release
     #   uses: softprops/action-gh-release@v1
@@ -36,6 +34,11 @@ jobs:
     #       setup.exe
     #   env:
     #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Update version.yml for GitHub Pages
+      run: |
+        echo "version: \"${{ steps.get_version.outputs.version }}\"" > _data/version.yml
+        echo "date: \"$(date '+%B %d, %Y')\"" >> _data/version.yml
 
     - name: Commit updated version.yml
       run: |
