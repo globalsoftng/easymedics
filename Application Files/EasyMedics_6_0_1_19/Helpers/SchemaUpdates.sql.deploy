@@ -1,0 +1,335 @@
+﻿
+-- Unified SQL Migration Script
+
+/* ============================================================
+   1. Create SchemaUpdates tracking table if missing
+   ============================================================ */
+IF NOT EXISTS (
+    SELECT * FROM sys.objects 
+    WHERE object_id = OBJECT_ID(N'[dbo].[SchemaUpdates]') AND type = N'U'
+)
+BEGIN
+    CREATE TABLE dbo.SchemaUpdates (
+        UpdateKey VARCHAR(100) PRIMARY KEY,
+        AppliedOn DATETIME DEFAULT GETDATE()
+    );
+END;
+
+
+/* ============================================================
+   2. Drop IX_ indexes if they exist (standardize to idx_)
+   ============================================================ */
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_tblClinicals_ClientID_TestID_date_reg' AND object_id = OBJECT_ID('dbo.tblClinicals'))
+    DROP INDEX IX_tblClinicals_ClientID_TestID_date_reg ON dbo.tblClinicals;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_tblClinicals_status' AND object_id = OBJECT_ID('dbo.tblClinicals'))
+    DROP INDEX IX_tblClinicals_status ON dbo.tblClinicals;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_tblPayment_transID_date_added' AND object_id = OBJECT_ID('dbo.tblPayment'))
+    DROP INDEX IX_tblPayment_transID_date_added ON dbo.tblPayment;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_tblClientsInfo_ID' AND object_id = OBJECT_ID('dbo.tblClientsInfo'))
+    DROP INDEX IX_tblClientsInfo_ID ON dbo.tblClientsInfo;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_tblTestType_TestID_testCategoryID' AND object_id = OBJECT_ID('dbo.tblTestType'))
+    DROP INDEX IX_tblTestType_TestID_testCategoryID ON dbo.tblTestType;
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_testCategory_testCategoryID' AND object_id = OBJECT_ID('dbo.testCategory'))
+    DROP INDEX IX_testCategory_testCategoryID ON dbo.testCategory;
+
+
+/* ============================================================
+   3. Recreate all required indexes with idx_ prefix
+   ============================================================ */
+-- tblClinicals
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_tblClinicals_ClientID_TestID_date_reg' AND object_id = OBJECT_ID('dbo.tblClinicals'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblClinicals_ClientID_TestID_date_reg
+    ON dbo.tblClinicals (ClientID, TestID, date_reg)
+    INCLUDE (clinicalID, status, Amount, reportType, date_modified, _order_id, _orderdetail_id, date_reported);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblClinicals_ClientID_TestID_date_reg');
+END;
+
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_tblClinicals_status' AND object_id = OBJECT_ID('dbo.tblClinicals'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblClinicals_status ON dbo.tblClinicals(status);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblClinicals_status');
+END;
+
+
+-- tblPayment
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_tblPayment_transID_date_added' AND object_id = OBJECT_ID('dbo.tblPayment'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblPayment_transID_date_added
+    ON dbo.tblPayment (transID, date_added)
+    INCLUDE (totalAmt, status, ClinicalInfo, AmtToPay, Referrer, CorporateDoc);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblPayment_transID_date_added');
+END;
+
+
+-- tblClientsInfo
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_tblClientsInfo_ID' AND object_id = OBJECT_ID('dbo.tblClientsInfo'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblClientsInfo_ID
+    ON dbo.tblClientsInfo (ID)
+    INCLUDE (Name, lastname, dob, Sex, EmailAddress);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblClientsInfo_ID');
+END;
+
+
+-- tblTestType
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_tblTestType_TestID_testCategoryID' AND object_id = OBJECT_ID('dbo.tblTestType'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblTestType_TestID_testCategoryID
+    ON dbo.tblTestType (TestID, testCategoryID)
+    INCLUDE (TestDescription);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblTestType_TestID_testCategoryID');
+END;
+
+
+-- testCategory
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_testCategory_testCategoryID' AND object_id = OBJECT_ID('dbo.testCategory'))
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_testCategory_testCategoryID
+    ON dbo.testCategory (testCategoryID)
+    INCLUDE (testCategoryName);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_testCategory_testCategoryID');
+END;
+
+/* ============================================================
+   tblCategoryPayment
+   ============================================================ */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblCategoryPayment_transID'
+      AND object_id = OBJECT_ID('dbo.tblCategoryPayment')
+)
+BEGIN
+    CREATE INDEX idx_tblCategoryPayment_transID 
+    ON dbo.tblCategoryPayment(transID);
+END;
+
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblCategoryPayment_catID'
+      AND object_id = OBJECT_ID('dbo.tblCategoryPayment')
+)
+BEGIN
+    CREATE INDEX idx_tblCategoryPayment_catID 
+    ON dbo.tblCategoryPayment(catID);
+END;
+
+/* ============================================================
+   tblReferrers
+   ============================================================ */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblReferrers_refID'
+      AND object_id = OBJECT_ID('dbo.tblReferrers')
+)
+BEGIN
+    CREATE INDEX idx_tblReferrers_refID 
+    ON dbo.tblReferrers(refID);
+END;
+
+
+/* ============================================================
+   tblRefHospitals
+   ============================================================ */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblRefHospitals_ID'
+      AND object_id = OBJECT_ID('dbo.tblRefHospitals')
+)
+BEGIN
+    CREATE INDEX idx_tblRefHospitals_ID 
+    ON dbo.tblRefHospitals(ID);
+END;
+
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblRefHospitals_MarketerID'
+      AND object_id = OBJECT_ID('dbo.tblRefHospitals')
+)
+BEGIN
+    CREATE INDEX idx_tblRefHospitals_MarketerID 
+    ON dbo.tblRefHospitals(MarketerID);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes 
+    WHERE name = 'idx_tblReferrals_refID_docID_HospID'
+      AND object_id = OBJECT_ID('dbo.tblReferrals')
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX idx_tblReferrals_refID_docID_HospID
+    ON dbo.tblReferrals (refID, docID, HospID);
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('idx_tblReferrals_refID_docID_HospID');
+END;
+/* ============================================================
+   4. Add/Create tables, columns, views with SchemaUpdates logging
+   ============================================================ */
+-- tblSettings
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tblSettings]') AND type = N'U')
+BEGIN
+    CREATE TABLE dbo.tblSettings (
+        Id INT PRIMARY KEY IDENTITY(1,1),
+        Setting VARCHAR(50) NOT NULL,
+        Value VARCHAR(50) NULL
+    );
+    INSERT INTO dbo.tblSettings (Setting, Value) VALUES ('should_send_email', '1');
+    INSERT INTO dbo.tblSettings (Setting, Value) VALUES ('should_send_wa', '0');
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('create_settings_table');
+END;
+
+
+-- tblusers.can_approve_result
+IF COL_LENGTH('dbo.tblusers', 'can_approve_result') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblusers ADD can_approve_result BIT NOT NULL DEFAULT 0;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblusers_can_approve_result');
+END;
+
+
+-- tblBillingTypes
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'dbo.tblBillingTypes') AND type = N'U')
+BEGIN
+    CREATE TABLE dbo.tblBillingTypes (
+        Id INT IDENTITY(1,1) NOT NULL,
+        PartnerType VARCHAR(50) NULL,
+        CONSTRAINT PK_tblBillingTypes PRIMARY KEY CLUSTERED (Id ASC)
+    );
+    SET IDENTITY_INSERT dbo.tblBillingTypes ON;
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (1, 'PRIVATE');
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (2, 'CORPORATE');
+    INSERT INTO dbo.tblBillingTypes (Id, PartnerType) VALUES (3, 'HMO');
+    SET IDENTITY_INSERT dbo.tblBillingTypes OFF;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblBillingTypes_created');
+END;
+
+
+-- tblBanksAccounts
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'dbo.tblBanksAccounts') AND type = N'U')
+BEGIN
+    CREATE TABLE dbo.tblBanksAccounts (
+        BankId INT IDENTITY(1,1) NOT NULL,
+        Bankname VARCHAR(50) NULL,
+        AcctNum VARCHAR(50) NULL
+    );
+    SET IDENTITY_INSERT dbo.tblBanksAccounts ON;
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (1, 'Access Bank', '0005324161');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (2, 'FirstBank Plc(MRI)', '2026333386');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (3, 'FirstBank Plc', '2009307380');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (4, 'Ecobank Plc', '0433002807');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (5, 'Access2', '0712411280');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (6, 'Diamond', '0102358381');
+    INSERT INTO dbo.tblBanksAccounts (BankId, Bankname, AcctNum) VALUES (0, NULL, NULL);
+    SET IDENTITY_INSERT dbo.tblBanksAccounts OFF;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblBanksAccounts_created');
+END;
+
+
+-- tblPayment new columns
+IF COL_LENGTH('dbo.tblPayment', 'SendToWA') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblPayment ADD 
+        SendToWA TINYINT NOT NULL DEFAULT 0,
+        SendToEmail TINYINT NOT NULL DEFAULT 0,
+        PACode VARCHAR(50) NULL,
+        EnroleeNo VARCHAR(50) NULL;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblPayment_columns_added');
+END;
+
+
+-- tblClinicals new columns
+IF COL_LENGTH('dbo.tblClinicals', 'ApprovedBy') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblClinicals ADD 
+        ApprovedBy VARCHAR(50) NULL,
+        DateApproved DATETIME NULL;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblClinicals_columns_added');
+END;
+
+
+-- tblCoporateAccts.AccountType
+IF COL_LENGTH('dbo.tblCoporateAccts', 'AccountType') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblCoporateAccts ADD AccountType INT NOT NULL DEFAULT 2;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblCoporateAccts_AccountType_added');
+END;
+
+-- temp_corporatePatients.EnroleeNo
+IF COL_LENGTH('dbo.temp_corporatePatients', 'EnroleeNo') IS NULL
+BEGIN
+    ALTER TABLE dbo.temp_corporatePatients ADD 
+        EnroleeNo VARCHAR(50) NULL,
+        PACode VARCHAR(50) NULL;
+
+    EXEC('update tblPayment set PACode='''', EnroleeNo='''' where PACode is null and EnroleeNo is null and ClientType<>''Private''');
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('temp_corporatePatients_columns_added');
+END;
+
+
+-- tblStaffDetails.SignatureImage
+IF COL_LENGTH('dbo.tblStaffDetails', 'SignatureImage') IS NULL
+BEGIN
+    ALTER TABLE dbo.tblStaffDetails ADD SignatureImage VARBINARY(MAX) NULL;
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('tblStaffDetails_SignatureImage_added');
+END;
+
+
+-- vw_TestType
+IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_TestType')
+    DROP VIEW vw_TestType;
+
+
+EXEC('
+CREATE VIEW dbo.vw_TestType AS
+SELECT 
+    tt.TestID, tt.TestDescription, tc.testCategoryName, 
+    tt.privatePrice, tt.coporatePrice, tt.testCategoryID, 
+    tt.hmoprice, tt.amt_usd
+FROM dbo.tblTestType tt
+INNER JOIN dbo.testCategory tc ON tt.testCategoryID = tc.testCategoryID
+');
+
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SchemaUpdates WHERE UpdateKey = 'vw_TestType_created')
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('vw_TestType_created');
+
+
+
+-- vwUsers
+IF EXISTS (SELECT * FROM sys.views WHERE name = 'vwUsers')
+    DROP VIEW vwUsers;
+
+
+EXEC('
+CREATE VIEW dbo.vwUsers AS
+SELECT     
+    dbo.tblusers.UserID, 
+    dbo.tblStaffDetails.Name + '' '' + dbo.tblStaffDetails.Surname AS Name, 
+    dbo.tblusers.StaffID, Designation, SignatureImage
+FROM dbo.tblusers 
+INNER JOIN dbo.tblStaffDetails ON dbo.tblusers.StaffID = dbo.tblStaffDetails.ID
+');
+
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SchemaUpdates WHERE UpdateKey = 'vwUsers_created')
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('vwUsers_created');
+
+
+
+EXEC('
+ALTER VIEW dbo.vw_corporatePatients
+AS
+SELECT dbo.tblClientsInfo.Name, dbo.tblClientsInfo.lastname, dbo.tblCoporateAccts.CompanyName, dbo.tblPayment.CorporateDoc, dbo.tblPayment.AmtToPay, dbo.tblPayment.date_added, dbo.tblPayment.transID, dbo.tblCoporateAccts.ID, 
+                  dbo.tblPayment.Discount, dbo.tblPayment.totalAmt, EnroleeNo, PACode
+FROM     dbo.tblPayment INNER JOIN
+                  dbo.tblClientsInfo ON dbo.tblPayment.ClientID = dbo.tblClientsInfo.ID INNER JOIN
+                  dbo.tblCoporateAccts ON dbo.tblPayment.CorporateID = dbo.tblCoporateAccts.ID
+');
+
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SchemaUpdates WHERE UpdateKey = 'vw_corporatePatients_altered')
+    INSERT INTO dbo.SchemaUpdates (UpdateKey) VALUES ('vw_corporatePatients_altered');
+
+
